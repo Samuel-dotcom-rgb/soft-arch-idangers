@@ -1,0 +1,111 @@
+
+ Example1 - Problems with Animal Subclasses
+
+Problems identified in the Animal subclasses:
+
+CAT:
+- Does not override speak(), so it inherits the default implementation which displays "[mute]" in a JOptionPane
+- The Cat author appears to be unaware of what they were inheriting or chose not to implement the necessary behavior
+- Results in a silent cat that displays nothing in a popup dialog
+
+DOG:
+- Overrides speak() to print "bark" to the console instead of using a JOptionPane (inconsistent with Animal design)
+- Fails to update the spokenMessage property, creating a state inconsistency
+- If another part of the program calls getSpokenMessage(), it will return "[mute]" instead of "bark"
+- Solves the problem of making the dog speak, but introduces a new problem of inconsistent state
+
+DUCK:
+- Overrides speak() to print "quack" to the console instead of using a JOptionPane (inconsistent with Animal design)
+- Like Dog, fails to update the spokenMessage property
+- If another part of the program calls getSpokenMessage(), it will return "[mute]" instead of "quack"
+- Creates inconsistency between what the duck says and what getSpokenMessage() reports
+
+MUTEDOG:
+- Does not override speak(), inheriting the default implementation
+- Will display "[mute]" in a JOptionPane, which may or may not be appropriate
+- The author may not have understood or appreciated the inherited behavior
+
+ROOT CAUSES:
+1. Implementation inheritance requires understanding all inherited methods and their contracts
+2. The Animal class documentation was inadequate in communicating its design intentions
+3. Subclass authors were either lazy, uninformed, or made different design decisions
+4. The default implementation was too opinionated about how output should be displayed (JOptionPane vs. console)
+
+PREVENTION STRATEGIES:
+The designer of the Animal class could have prevented these problems by:
+1. Declaring an abstract speak(String message) method instead of providing a default implementation
+2. Documenting that subclass authors MUST implement speak() and that they MUST update the spokenMessage property by calling setSpokenMessage()
+3. Providing concrete helper methods like setSpokenMessage() and getSpokenMessage() to enforce consistency
+4. Considering the use of an interface-based design instead of implementation inheritance
+5. Not making assumptions about the output mechanism (JOptionPane) - let subclasses decide how to display messages
+6. Making the speak() method abstract to force all subclasses to provide their own implementation with full awareness
+
+
+ Example2 - NullPointerException Problem
+
+WHAT HAPPENS:
+The program throws a NullPointerException when run.
+
+WHY IT HAPPENS:
+1. In Main.java, a String instance variable "message" is declared but not initialized
+2. Instance variables in Java are automatically initialized to null
+3. The code then calls duck.speak(p.message), passing null as the argument
+4. In Animal.speak(String message), the code checks if (message.isBlank()) without first checking if message is null
+5. When message is null, there is no String object to call the isBlank() method on
+6. Calling a method on null causes a NullPointerException
+
+THE DESIGN PROBLEM:
+The Animal class author failed to validate the input parameter before using it. The method assumes the caller will always pass a valid String object, but makes no defensive checks for null values.
+
+PREVENTION STRATEGIES:
+The designer of the Animal class could have prevented this problem by:
+1. Adding a null check BEFORE calling message.isBlank():
+   - if (message == null || message.isBlank())
+2. Throwing a NullPointerException explicitly with a clear error message if null is detected
+3. Using defensive programming practices and validating all input parameters
+4. Documenting that the message parameter cannot be null
+5. Declaring speak() as an abstract method to force subclasses to implement their own validation logic
+6. Considering the Null Object Pattern - accepting null as valid and converting it to "[mute]" or a default message
+
+
+ Example3 - Logic Error in Dog/Labrador Classes
+
+THE PROBLEM:
+The program incorrectly reports that a 5-year-old dog is elderly when it should be characterized as young.
+
+WHERE THE ERROR IS:
+The error is in the Dog class, specifically in the getAdjustedAge() method.
+
+THE BUG:
+The formula used is: return realAge * 15;
+But the correct formula should be: return realAge * 5;
+
+This causes a 5-year-old dog to have an adjusted age of 75 (5 * 15) instead of 25 (5 * 5).
+
+HOW THE ERROR PROPAGATES:
+1. Labrador.isOld() calls the inherited getAdjustedAge() method
+2. The Labrador author assumes this method correctly adjusts the age by a factor of 5
+3. The isOld() method checks if getAdjustedAge() >= 60 to determine if a dog is elderly
+4. For a 5-year-old dog: 5 * 15 = 75, which is >= 60, so isOld() returns true
+5. The program incorrectly reports the dog as elderly
+
+WHY THIS IS PARTICULARLY DANGEROUS:
+This is a "logic error" that does not cause the program to crash - it runs successfully but produces incorrect results. These errors are:
+- Very difficult to discover without examining source code
+- Not caught by the Java compiler or runtime
+- Easy to inherit without realizing the inherited code is wrong
+- Potentially widespread if many subclasses rely on the broken method
+
+HOW THE ERROR COULD HAVE BEEN AVOIDED (According to Labrador.java comments):
+1. Make the getAdjustedAge() method abstract in the Dog class
+2. This would force each subclass (like Labrador) to provide its own correct implementation
+3. Alternatively, declare Dog as an interface instead of an abstract class and leave the implementation of getAdjustedAge() to subclasses
+4. The key point is to make getAdjustedAge() abstract rather than providing a broken concrete implementation
+5. By requiring subclasses to implement the method themselves with full awareness of its purpose, you prevent them from blindly inheriting incorrect logic
+
+ADDITIONAL CONSIDERATION:
+The problem could also be partially prevented through:
+- Better documentation of the Dog class and its methods
+- Code reviews and testing (unit tests would catch the wrong formula)
+- Defensive design that makes incorrect implementation less likely
+- However, the most fool-proof solution is to make the method abstract as noted in the Labrador comments
